@@ -4,6 +4,10 @@ source(file.path('R', 'source_here.R'))
 here_source('glue_do.R')
 
 
+require(purrr)
+require(dplyr)
+require(tibble)
+
 #' function_vectorizer
 #' 
 #'  takes a function and vectorise returns that function in vectorized form

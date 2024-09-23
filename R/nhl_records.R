@@ -8,6 +8,8 @@ here_source('vectorizer.R')
 here_source('url_make.R')
 
 
+require(glue)
+
 
 
 

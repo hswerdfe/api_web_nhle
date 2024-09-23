@@ -6,6 +6,8 @@ here_source('request_wrapper.R')
 here_source('vectorizer.R')
 here_source('url_make.R')
 
+require(glue)
+require(dplyr)
 
 #' nhl_get_stats 
 #' 
@@ -91,7 +93,7 @@ nhl_teams_to_vectorise <- function(lang, ...){
 #'   nhl_prama_norm_teams_all('english')
 nhl_prama_norm_teams_all <- function(...){
   nhl_teams(...) |> 
-    filter(! is.na(franchiseId) ) |>
+    dplyr::filter(! is.na(franchiseId) ) |>
     dplyr::pull(rawTricode) |> 
     unique()
 }
@@ -294,6 +296,9 @@ vectorized_functions <- lapply(names(functions_to_vectorize), function(name) {
 
 # Assign the vectorized functions to their respective names
 names(vectorized_functions) <- names(functions_to_vectorize)
+
+
+
 # Extract the individual vectorized functions
 nhl_teams <- vectorized_functions$nhl_teams
 nhl_country <- vectorized_functions$nhl_country

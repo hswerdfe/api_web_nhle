@@ -6,8 +6,13 @@ library(ISOcodes)
 data(ISO_639_2)
 
 
+source(file.path('R', 'source_here.R'))
+here_source('glue_do.R')
 
 
+require(tibble)
+require(dplyr)
+require(stringr)
 
 #' nhl_param_norm_lang
 #'
@@ -122,7 +127,7 @@ nhl_param_norm_yr <- function(yr){
   }else if (stringr::str_length(yr) == 4){
     yr
   }else{
-    stop(glue('📅 Failed to normalize year `{yr}`'))
+    glue_stop('📅 Failed to normalize year `{yr}`')
   }
   
 }
@@ -160,7 +165,7 @@ nhl_param_norm_season <- function(season){
     } else if (stringr::str_length(season) == 4){
       return (paste0(season , as.character(as.integer(season) + 1)))
     } else{
-      stop(glue('📅 Failed to normalize season `{season}`'))
+      glue_stop('📅 Failed to normalize season `{season}`')
     }
   } else {
     return (
@@ -170,7 +175,7 @@ nhl_param_norm_season <- function(season){
         paste0(collapse = '')
     )
   } 
-  stop(glue('📅 Failed to normalize season `{season}`'))
+  glue_stop('📅 Failed to normalize season `{season}`')
 }
 
 
@@ -204,7 +209,7 @@ nhl_param_norm_game_type <- function(x){
   if (stringr::str_squish(stringr::str_to_lower(x)) %in% c('playoffs', 'playoff', 'play-off', 'play-offs') ){
     return ('3')
   }  
-  stop(glue('🏒 Failed to normalize game type`{x}`'))
+  glue_stop('🏒 Failed to normalize game type`{x}`')
 }
 
 
@@ -252,20 +257,21 @@ nhl_param_norm_team <- function(x, lang){
 #'     nhl_param_norm_player(x = 'mcda', lang = 'en')
 nhl_param_norm_player <- function(x, lang){
   df <- 
-    nhl_roster_full(team = 'all', season = 'all', lang = lang) |> #filter(id == 8481422 ) |>
-    select( 
+    nhl_roster_full(team = 'all', season = 'all', lang = lang) |> 
+    dplyr::select( 
       id,
       matches ( '^(last|first)Name_.*$' )
     ) |>
-    pivot_longer(cols = matches ( '^(last|first)Name_.*$' ), values_drop_na = TRUE) |>
-    separate(name, into = c('name','lang'), sep = 'Name_') |>
-    distinct() |>
+    tidyr::pivot_longer(cols = matches ( '^(last|first)Name_.*$' ), values_drop_na = TRUE) |>
+    tidyr::separate(name, into = c('name','lang'), sep = 'Name_') |>
+    dplyr::distinct() |>
     # dplyr::group_by(id, lang, name) %>%
     # dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
     # dplyr::filter(n > 1L) 
-    pivot_wider(names_from = name, values_from = 'value', values_fn  = ~{paste0(.x, collapse = ' ')}) |>
-    mutate(full = paste0(first, ' ', last), 
-           full_2 = paste0(last, ', ', first)
+    tidyr::pivot_wider(names_from = name, values_from = 'value', values_fn  = ~{paste0(.x, collapse = ' ')}) |>
+    dplyr::mutate(
+              full = paste0(first, ' ', last), 
+              full_2 = paste0(last, ', ', first)
            )
   
   nhl_search_df(df = df, x = x, rot_cols = c('full', 'full_2'), key = 'id')

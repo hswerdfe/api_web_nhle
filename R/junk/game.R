@@ -61,7 +61,7 @@ threeStars <-
 
 
 threeStars |>
-  filter(!is.na(star)) |>
+  dplyr::filter(!is.na(star)) |>
   count(season, star, is_winning) |>
   ggplot(aes(x = season, y = n, fill = is_winning)) +
   geom_col() +

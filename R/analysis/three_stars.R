@@ -39,7 +39,7 @@ threeStars <-
     landing <- nhl_get('gamecenter/{.x}/landing')
     
     summary <- landing$summary
-    
+    names(landing)
     winning_team <- dplyr::case_when(
       summary$linescore$totals$home >  summary$linescore$totals$away ~ landing$homeTeam$abbrev, 
       summary$linescore$totals$home <  summary$linescore$totals$away ~ landing$awayTeam$abbrev, 

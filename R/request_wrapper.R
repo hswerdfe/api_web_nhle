@@ -4,6 +4,10 @@ source(file.path('R', 'source_here.R'))
 here_source('cache.R')
 
 
+require(glue)
+require(httr)
+require(jsonlite)
+
 
 G_ATTEMPTS_REMAIN <- 3
 G_SECONDS_PAUSE <- 0.5
@@ -34,7 +38,7 @@ G_MIN_SECONDS_BETWEEN_REQUESTS <- 0
 #'
 #' @examples
 #'   x <- get_url_with_retry('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
-#'   x <- get_url_with_retry('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2', FORCE_REFRESH_AFTER_SEC = 0)
+#'   x <- get_url_with_retry(url = 'https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2', FORCE_REFRESH_AFTER_SEC = 0)
 #'   get_url_with_retry(url = 'https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
 #'   get_url_with_retry(url = 'https://api-web.nhle.com/v1/roster/TOR/20232024')
 #'    get_url_with_retry(url = 'https://api-web.nhle.com/v1/roster/TOR/20232024', FORCE_HARD_CACHE_SAVE_AFTER_SEC = 0)
@@ -67,7 +71,7 @@ get_url_with_retry_TO_CACHE <- function(url,
     
     return( result )
   } else{
-    err_msg <- glue::glue('🌐 status_code is {response$status_code}, remaining attempts are {attempts_remain}, Waiting fore {seconds_pause} seconds, url = {url}')
+    err_msg <- glue::glue('🌐 status_code is {response$status_code}, remaining attempts are {attempts_remain}, Waiting for {seconds_pause} seconds, url = {url}')
     if (attempts_remain > 0 ){
       warning(err_msg)
       Sys.sleep(seconds_pause)

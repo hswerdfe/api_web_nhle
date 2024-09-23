@@ -1,7 +1,16 @@
 
+
+source(file.path('R', 'source_here.R'))
+here_source('glue_do.R')
+
+
 library(tidyverse)
-
-
+require(purrr)
+require(tibble)
+require(stringi)
+require(stringdist)
+require(dplyr)
+require(tidyr)
 
 
 #' nhl_as_tibble
@@ -188,16 +197,16 @@ nhl_search_df <- function(df,
   # Rotate the keys
   df_k <-
     df |> 
-    mutate(across(all_of(rot_cols), as.character)) |>
-    select(all_of(c(key, rot_cols))) |>
-    pivot_longer(cols = all_of(rot_cols), values_drop_na = TRUE) 
+    dplyr::mutate(dplyr::across(tidyselect::all_of(rot_cols), as.character)) |>
+    dplyr::select(tidyselect::all_of(c(key, rot_cols))) |>
+    tidyr::pivot_longer(cols = tidyselect::all_of(rot_cols), values_drop_na = TRUE) 
   
   
   ########################
   # Find and exact match, return it if found
   df_f <- 
     df_k |>
-    filter( !!sym(key) == x | value == x  )
+    dplyr::filter( !!sym(key) == x | value == x  )
   if ((df_f[[key]] |> unique() |> length()) == 1){
     return (  df_f[[key]] |> first() )
   } 
@@ -207,7 +216,7 @@ nhl_search_df <- function(df,
   # Find a cleaned exact match match, return result if found
   df_f <- 
     df_k |>
-    filter(nhl_str_base_clean(value) == nhl_str_base_clean(x))
+    dplyr::filter(nhl_str_base_clean(value) == nhl_str_base_clean(x))
   if ((df_f[[key]] |> unique() |> length()) == 1){
     return (  df_f[[key]] |> first() )
   }   
@@ -218,7 +227,7 @@ nhl_search_df <- function(df,
   # Find a subset match , return result if found
   df_f <- 
     df_k |>
-    filter( str_detect(nhl_str_base_clean(value) , nhl_str_base_clean(x)) )
+    dplyr::filter( stringr::str_detect(nhl_str_base_clean(value) , nhl_str_base_clean(x)) )
   if ((df_f[[key]] |> unique() |> length()) == 1){
     return (  df_f[[key]] |> first() )
   }    
@@ -240,30 +249,36 @@ nhl_search_df <- function(df,
   if ((df_f[[key]] |> unique() |> length()) > 1){
     options <- 
       df_f |> 
-      mutate(
+      dplry::mutate(
         sim = stringdist::stringsim( a = nhl_str_base_clean(value), b = nhl_str_base_clean(x) ,  method = 'lcs' )
-      ) |> arrange(desc(sim)) |>
-      mutate(lbl = paste(!!sym(key), value, sep = '=')) |> 
-      pull(lbl) |>
+      ) |> dplry::arrange(dplry::desc(sim)) |>
+      dplry::mutate(lbl = paste(!!sym(key), value, sep = '=')) |> 
+      dplyr::pull(lbl) |>
       unique() |> 
       paste0(collapse = '; ') |> 
-      str_trunc(200)
+      stringr::str_trunc(200)
     
     
-    stop(glue('🎯️ Normalizing `{x} `found  `{nrow(df_f |> distinct())}` options {options}. Try being more specific!'))
-    
+    glue_stop('🎯️ Normalizing `{x} `found  `{nrow(df_f |> dplyr::distinct())}` options {options}. Try being more specific!')
   }
   if ((df_f[[key]] |> unique() |> length()) == 0){
     df_sim <- 
-      df_k |> mutate(
-        sim = stringdist::stringsim( a = nhl_str_base_clean(value), b = nhl_str_base_clean(x) ,  method = 'lcs' )
+      df_k |> dplyr::mutate(
+        sim = stringdist::stringsim( a = nhl_str_base_clean(value), b = nhl_str_base_clean(x) ,  method = 'lcs')
       ) |> 
-      arrange(desc(sim)) |>
-      distinct()
+      dplyr::arrange(dplyr::desc(sim)) |>
+      dplyr::distinct()
     
     
-    options <- df_sim |> mutate(lbl = paste(!!sym(key), value, sep = '=')) |> pull(lbl) |> paste0(collapse = '; ') |> str_trunc(200)
-    stop(glue('🎯 Normalizing `{x}`found NO options, some options are {options}. Try being more specific!'))
+    options <- 
+      df_sim |> 
+      dplyr::mutate(lbl = paste(!!sym(key), value, sep = '=')) |> 
+      dplyr::pull(lbl) |> 
+      paste0(collapse = '; ') |> 
+      stringr::str_trunc(200)
+    
+    
+    glue_stop('🎯 Normalizing `{x}`found NO options, some options are {options}. Try being more specific!')
   }
 }
 
@@ -273,8 +288,8 @@ nhl_search_df <- function(df,
 #' 
 #'  returns the index of the ith unnamed element from a named list
 #'
-#' @param lst 
-#' @param i 
+#' @param lst : a list where some of the values may or may not have names
+#' @param i : Default of 1 : will return the ith (first) item without a name
 #'
 #' @return
 #' @export

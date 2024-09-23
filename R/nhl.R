@@ -5,7 +5,9 @@ here_source('request_wrapper.R')
 here_source('vectorizer.R')
 here_source('nhl_stat.R')
 
-
+require(glue)
+require(purrr)
+require(tibble)
 
 
 
@@ -45,7 +47,7 @@ nhl_roster_TO_VETORIZE <- function(team, season, lang){
   
   
   if (! season %in% nhl_roster_season(team, lang)){
-    return(tibble())
+    return(tibble::tibble())
   }
   nhl_get('roster/{team}/{season}')  |>
   nhl_list_bind(var_nm = 'position_type')
@@ -119,7 +121,7 @@ nhl_roster <- function_vectorizer(
   arg_name = 'season',
   all_possible = nhl_roster_season
 )
-
+nhl_seasons()
 
 
 #' nhl_roster_full
@@ -240,7 +242,7 @@ nhl_player_to_pluck <- function(player, lang, pluck){
   ret_2 <-   
     ret |> 
     nhl_pluck(pluck) |> 
-    mutate(playerId = ret$playerId)
+    dplyr::mutate(playerId = ret$playerId)
   
   if ('seasons' %in% colnames(ret_2)){
     ret_2 |> unnest(seasons)
@@ -252,7 +254,7 @@ nhl_player_to_pluck <- function(player, lang, pluck){
 
 #' nhl_all_players_vec
 #' 
-#'  returns a vector of playerIDs that represent all the players that have ever played in the leugue
+#'  returns a vector of playerIDs that represent all the players that have ever played in the league
 #'
 #' @param lang language
 #' @param ... ignored
@@ -266,7 +268,13 @@ nhl_player_to_pluck <- function(player, lang, pluck){
 nhl_all_players_vec <- function(lang, ...){
   nhl_roster_full(team = 'all', season = 'all', lang = lang) |> pull(id) |> unique() 
 }
+
+##################################
+# Warning : This can take a while  !!!
+# We are getting every roster for every year, for every team ever.🤷
 G_CACHE_ALL_PLAYERS_VEC <- nhl_all_players_vec(lang = 'en')
+
+
 
 #' nhl_player_awards_TO_VETORIZE
 #'
@@ -279,12 +287,11 @@ G_CACHE_ALL_PLAYERS_VEC <- nhl_all_players_vec(lang = 'en')
 #' @examples
 #'      nhl_player_awards_TO_VETORIZE(player = 'Brent Gretzky', lang = 'en')
 #'      nhl_player_awards_TO_VETORIZE(player = 'ovech', 'en')
-#'      nhl_player_awards(player = c('Brent Gretzky', 'ovech', 'Wayne Gretzky'), lang = lang)
+#'      nhl_player_awards(player = c('Brent Gretzky', 'ovech', 'Wayne Gretzky'), lang = 'en')
 #' 
 nhl_player_awards_TO_VETORIZE <- function(player, lang){
   nhl_player_to_pluck(player =  player, lang = lang , pluck = 'awards')
 }
-
 
 
 #' nhl_player_awards
@@ -325,7 +332,7 @@ nhl_player_awards <- make_cached_function(\(player, lang){
 #' @examples
 #'      nhl_player_season_totals_TO_VETORIZE(player = 'Brent Gretzky', lang = 'en')
 #'      nhl_player_season_totals_TO_VETORIZE(player = 'ovech', 'en')
-#'      nhl_player_season_totals_TO_VETORIZE(player = c('Brent Gretzky', 'ovech', 'Wayne Gretzky'), lang = lang)
+#'      nhl_player_season_totals(player = c('Brent Gretzky', 'ovech', 'Wayne Gretzky'), lang = 'en')
 #' 
 nhl_player_season_totals_TO_VETORIZE <- function(player, lang){
   nhl_player_to_pluck(player =  player, lang = lang , pluck = 'seasonTotals')
