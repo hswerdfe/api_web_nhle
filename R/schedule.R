@@ -11,9 +11,6 @@ require(dplyr)
 
 
 
-
-
-
 #' schedule
 #' 
 #'   get the schedule for any team and season
@@ -32,8 +29,9 @@ require(dplyr)
 #'         schedule(team = 'all', season = 20232024 )
 #'         schedule(team = 'atl', season = 'all' )  |> select(matches('__'))
 #'         cache_vec_save(func = schedule)
-#'         
-#'         
+#'         schedule(team = 'all', season = 'all' )  |> select(matches('__'))
+#'         cache_vec_save(schedule)         
+
 schedule_BASE <- function(
     team, 
     season,
@@ -44,7 +42,7 @@ schedule_BASE <- function(
   #team = 'tor'
   #season = 20232024
   x <- get_url_base(pattern = pattern, url_type = url_type)  
-  
+  x$games$winningGoalScorer_lastName
   if (is.null(x)){
     return(tibble())
   }
@@ -82,4 +80,30 @@ schedule <- cache_vect_maker(
   ), 
   is_valid_combo = is_valid_season
 )
+
+
+#' schedule_all_dates
+#'
+#' @return
+#' @export
+#'
+#' @examples
+schedule_all_dates <- function(
+    path  = file.path('data', 'download')  ,
+    file_name_ext = 'feather',
+    file_pattern = paste0('schedule_', '(.*)\\.', file_name_ext)  
+  ){
+  db <- read_db(path  = path, file_pattern = file_pattern)
+  db$result$gameDate |> unique() |> sort()
+}
+
+
+games_all  <- function(
+    path  = file.path('data', 'download')  ,
+    file_name_ext = 'feather',
+    file_pattern = paste0('schedule_', '(.*)\\.', file_name_ext)
+  ){
+  db <- read_db(path  = path, file_pattern = file_pattern)
+  db$result$id |> unique() |> sort()
+}
 

@@ -13,6 +13,132 @@ require(dplyr)
 require(tidyr)
 
 
+
+
+
+#' extract_args
+#' 
+#'  takes a dataframe with a formated "args"  column and extracts those columns as key value pairs.
+#'
+#' @param dat 
+#' @param cache_key_col 
+#' @param key_col 
+#' @param val_col 
+#' @param key_val_col 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+extract_args <- function(dat, 
+                         cache_key_col = '__args_key',
+                         key_col = '__key',
+                         val_col = '__val',
+                         key_val_col = '__key_val'
+){
+  #dat = roster$result
+  
+  dat_2 <- 
+    dat |> #select(id, !!sym(cache_key_col))  |> 
+    mutate(!!sym(key_val_col) := str_split( !!sym(cache_key_col)  ,'___')) |> 
+    unnest(!!sym(key_val_col))  |>
+    mutate(!!sym(key_col) := str_extract(!!sym(key_val_col), '^(.*)=\\(.*\\)$', 1 ), 
+           !!sym(val_col) := str_extract(!!sym(key_val_col), "^.*=\\(`(.*)`\\)", 1 )) |>
+    select(-!!sym(cache_key_col), -!!sym(key_val_col))  |>  
+    distinct() 
+  
+  new_col_names <- dat_2[[key_col]] |> unique()
+  
+  
+  dat_3 <- 
+    dat_2   |>
+    pivot_wider(names_from = !!sym(key_col), values_from = !!sym(val_col))
+  
+  new_col_names |> 
+    purrr::reduce(\(.acc, .x){
+      .acc  |> unnest(!!sym(.x))
+    }, .init = dat_3) |>
+    distinct()
+  
+}
+
+
+
+
+
+# Function to save intermediate results
+#' save_db
+#'
+#' @param db  Named list of dataframes
+#' @param dir directory to save stuff to
+#' @param base_name string pattern for name of dataframe where {data_type} is replaced with the name from the list of database above
+#' @param save_func fefault to feather
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'  save_db(db = list(mt = mtcars, irs=iris, dmd = diamonds), base_name = 'default_data_{data_type}.feather')
+#' 
+save_db <- function(
+    db, 
+    base_name,
+    dir = file.path('data','download'), 
+    save_func =arrow::write_feather
+) {
+  purrr::walk2(db, names(db), \(.dat, data_type){
+    .dat |> 
+      save_func(file.path(dir, glue(base_name)))
+  })
+}
+
+
+
+#' read_db
+#'
+#' @param path 
+#' @param file_pattern 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'     read_db()
+#'     read_db(file_pattern = '^player_(.*)\\.feather$')
+read_db <- function(
+    path = file.path('data','download'), 
+    file_pattern = '^(.*)\\.feather$',
+    read_func = arrow::read_feather
+){
+  nms <- list.files(path = path, pattern = file_pattern, full.names = FALSE) 
+  nms |> 
+    set_names(str_extract(nms, file_pattern, 1)) |> 
+    map(\(.nm){
+      read_func(file.path(path, .nm)) |> distinct()
+    }) 
+}
+
+
+#' lst_2_str
+#'
+#' @param lst 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+lst_2_str <- function(lst = arg){
+  map2(names(lst), lst, ~{
+    paste0(.x,' = ', .y)
+  }) |>
+    paste0(collapse = '; ')
+}
+
+
+
+
+
+
 #' nhl_as_tibble
 #'  
 #'  converts nested lists back to tibbles.
@@ -71,6 +197,81 @@ nhl_as_tibble <- function(x){
       .x
     }
   }) 
+}
+
+
+
+
+
+#' nhl_as_flat_tibble
+#' 
+#'  recursively joins data that comes back into a single record tibble, ti will ignore all tibbles and multi length lists.
+#'
+#' @param dat Normally a list of lists of lists, that comes back from an NHL Query
+#' @param base_name 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+nhl_as_flat_tibble <- function(dat, base_name = ''){
+  
+  #dat$playerByGameStats
+  map(names(dat), \(.n){
+    #.n = names(dat)[[1]]
+    #.x = 'featuredStats'
+    #.n = 'playerByGameStats'
+    new_nm <- paste0(base_name, .n)
+    
+    obj <- dat[[.n]]
+    
+    
+    if (inherits(obj,"list")){
+      #print(new_nm)
+      #print(obj)      
+      if (length(obj) == 1){
+        if (inherits(obj[[1]],"list")){
+          x = nhl_as_flat_tibble(dat = obj[[1]], base_name = paste0(new_nm, '_', names(obj)))
+          x
+        }else{
+          tibble(!!sym(new_nm) := obj[[1]])  
+        }
+        
+      }else{
+        #print(new_nm)
+        #print(obj)
+        tmp_dat = nhl_as_flat_tibble(dat = obj, base_name = paste0(new_nm, '_'))
+        if (is.null( tmp_dat ) ){
+          tmp_dat
+        }else{
+          if ( nrow(tmp_dat) == 0){
+            NULL
+          }else{
+            tmp_dat
+          }
+        }
+      }
+    }else if (inherits(obj,"character")  ){
+      if (length(obj) == 1){
+        tibble(!!sym(new_nm) := str_trim(obj[[1]]))
+      }else{
+        NULL
+      }
+    }else if (inherits(obj,"character")  |
+              inherits(obj,"integer") |
+              inherits(obj,"numeric")
+    ){
+      if (length(obj) == 1){
+        tibble(!!sym(new_nm) := obj[[1]])
+      }else{
+        NULL
+      }
+    }else{
+      NULL
+    }
+    
+  }) |> #set_names(names(dat))
+    bind_cols()
 }
 
 

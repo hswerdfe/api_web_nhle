@@ -32,8 +32,8 @@ seasons_nhl <- function(){
 }
 
 
-seasons_team <- function(team, ...){
-  ret_val <- get_url_base('roster-season/{team}', url_type = 'base', ...)  
+seasons_team <- function(team, ..., pattern = 'roster-season/{team}',   get_func = get_url_possibly_cached){
+  ret_val <- get_url_base(pattern = pattern, url_type = 'base', get_func = get_func, ...)  
   if (length(ret_val) == 0){
     return(integer(0) |> unlist())
   }
@@ -60,11 +60,11 @@ seasons  <- function(team = NULL, ...){
 #' teams_df() |> filter(rawTricode == 'UTA')
 #' teams()
 #'   
-teams_df <- function(lang  = 'en',  ...){
-  get_url_base(pattern = '{lang}/team', url_type = 'stats', ...)
+teams_df <- function(lang  = 'en',  ..., get_func = get_url_possibly_cached){
+  get_url_base(pattern = '{lang}/team', url_type = 'stats', ..., get_func = get_func)
 }
-teams <- function(lang  = 'en',  ...){
-  get_url_base(pattern = '{lang}/team', url_type = 'stats', ...) |>
+teams <- function(lang  = 'en',  ...,  get_func = get_url_possibly_cached){
+  get_url_base(pattern = '{lang}/team', url_type = 'stats', ...,  get_func  = get_func) |>
     pull(rawTricode) |>
     unique()
 }
@@ -82,6 +82,7 @@ teams <- function(lang  = 'en',  ...){
 #' @export
 #'
 #' @examples
+#'       is_valid_season('OTT', 19621963 )
 #'        is_valid_season('tor', 19621963 )
 #'        is_valid_season('ott', 19621963 ) 
 is_valid_season <-function(team, season, ...){

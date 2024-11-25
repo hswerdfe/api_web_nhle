@@ -1,6 +1,7 @@
 
 require(here)
 require(purrr)
+require(stringr)
 source(file.path(here::here(), 'R', 'glue_do.R'))
 
 G_DIRS <- c(here::here(), 
@@ -8,7 +9,8 @@ G_DIRS <- c(here::here(),
             file.path(here::here(),'data'), 
             getwd()
 )
-
+G_DIRS_SUB <- list.dirs(path = G_DIRS, full.names = TRUE, recursive = TRUE)
+G_DIRS_SUB  <- G_DIRS_SUB[!str_detect(G_DIRS_SUB, '/\\.') ]  |> unique()
 
 
 #' here_full_file_name
@@ -76,7 +78,7 @@ here_full_file_name <- function(file_name,
 #' @examples
 here_list_files <- function(
     pattern, 
-    dirs = G_DIRS, 
+    dirs = G_DIRS_SUB, 
     not_found_func = glue_stop,   
     recursive = FALSE,
     default = ''
@@ -91,7 +93,7 @@ here_list_files <- function(
 #' here_xx
 #' 
 #' 
-#' here_do , here_source lookin the here::here() locations and some related location and try to perform .func
+#' here_do , here_source looking the here::here() locations and some related location and try to perform .func
 #'
 #' @param file_name string file name
 #' @param dirs directories to look for 
@@ -101,31 +103,42 @@ here_list_files <- function(
 #' @export
 #'
 #' @examples
-here_do <- function(file_name, 
-                    dirs = G_DIRS,
-                    .func
+here_do <- function(file_name , 
+                    .func , 
+                    dirs = G_DIRS_SUB 
 ){
   
-  file_found = FALSE
+  file_found <- FALSE
+  x <- NA
   for (dir in dirs) {
     full_file_name <- file.path(dir, file_name)
     if (file.exists(full_file_name)){
-      full_file_name |> .func()
-      file_found = TRUE
+      x <- full_file_name |> .func()
+      file_found <- TRUE
       break
     }
   }
   if ( ! file_found ){
     glue_stop('Unable to find file `{file_name}` looked in 🔍 dirs 📁= {dirs |> paste0(collapse = "; ")}')
   }
-  
+  x
 }
 
 
 
 
-
-
+#' read_feather_here
+#'
+#' @param file   a file name
+#' @param ... passed to here_do
+#'
+#' @return
+#' @export
+#'
+#' @examples
+read_feather_here <- function(file, ...){
+  here_do(file_name = file, .func = arrow::read_feather, ...)
+}
 
 
 #' here_source
@@ -140,9 +153,9 @@ here_do <- function(file_name,
 #' @examples
 #'     here_source('cache.R')
 #'     here_source('not_a_file_123456_switch_654321_file_a_not.R')
-#' 
+#'    here_source('cache_vec.R')
 here_source <- function(file_name, ... , .func = source){
-  here_do(file_name, ... , .func = .func)
+  here_do(file_name = file_name, ... , .func = .func)
 }
 
 

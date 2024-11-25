@@ -39,7 +39,13 @@ load_hard_cache <- function(cache_file_name = G_CACHE_FILE_NAME , FORCE_RELOAD =
     
   if (is.null(G_CACHE)){
     if (file.exists(cache_file_name)){
-      readr::read_rds(cache_file_name)
+      tmp_pbj <- readr::read_rds(cache_file_name)
+      if (inherits(tmp_pbj, "hash")){
+        return(tmp_pbj)
+      }else{
+        glue_message('Global cache File exists, but does not seem to be a hash object: cache_file_name ={cache_file_name}')
+        hash::hash()
+      }
     }else{
       #list()
       hash::hash()
@@ -64,6 +70,7 @@ load_hard_cache <- function(cache_file_name = G_CACHE_FILE_NAME , FORCE_RELOAD =
 #' @export
 #'
 #' @examples
+#' G_CACHE <- get_cache(FORCE_RELOAD= TRUE)
 get_cache  <- function(..., FORCE_RELOAD = FALSE){
   load_hard_cache(..., FORCE_RELOAD = FORCE_RELOAD)
 }
@@ -222,7 +229,7 @@ make_cached_function <- function(f) {
   
   glue_message('💲 making cached version of the function, {as.list(match.call())[[2]]}')
   
-  cached_function <- function(..., FORCE_REFRESH_AFTER_SEC =  60 * 60 * 24 * 30, FORCE_HARD_CACHE_SAVE_AFTER_SEC = 5) {
+  cached_function <- function(..., FORCE_REFRESH_AFTER_SEC =  60 * 60 * 24 * 90, FORCE_HARD_CACHE_SAVE_AFTER_SEC = 5) {
     
     args <- list(...)
     func_name <- as.list(match.call())[[1]] |> as.character()
@@ -233,7 +240,9 @@ make_cached_function <- function(f) {
     
     
     func_key <- cache_make_key_internal_func(func_name, fuction_text)
-    if (! exists(func_key, G_CACHE)){
+    #glue_print('func_key  = {func_key}')
+    
+    if (! hash::has.key(func_key, G_CACHE)){
       G_CACHE[[func_key]] <<- hash::hash(
         func_name  = func_name,
         fuction_text = fuction_text
@@ -246,7 +255,7 @@ make_cached_function <- function(f) {
     call_key <- cache_make_key_internal(func_name = func_name, args = args, fuction_text = fuction_text)
     curr_time <- Sys.time() 
     
-    if (exists(call_key, G_CACHE[[func_key]])) {
+    if (hash::has.key(call_key, G_CACHE[[func_key]])) {
       age_sec <- (curr_time -  G_CACHE[[func_key]][[call_key]][['call_time']])  |>  as.numeric(units = 'secs')
       if (age_sec < FORCE_REFRESH_AFTER_SEC) {
         
@@ -349,9 +358,15 @@ cache_delete <- function(func_name , include_hard_cach = TRUE){
   glue_message('deleted `{num_del}` objects from cache from function `{func_name}` ')
 }
 
+# 
+# mt_to_cache <- function(a_cyl){
+#   mtcars   |> filter(cyl == a_cyl)
+# }
 
-
-
+# mt_to_cache(4)
+# 
+# mt_c <- make_cached_function(mt_to_cache)
+# mt_c(4)
 # make_cached_function_df <- function(f) {
 #   
 #   fuction_text <- f |> extract_func_text()
@@ -370,7 +385,7 @@ cache_delete <- function(func_name , include_hard_cach = TRUE){
 #     call_key <- cache_make_key_internal(func_name = func_name, args = args, fuction_text = fuction_text)
 #     curr_time <- Sys.time() 
 #     
-#     if (exists(call_key, G_CACHE)) {
+#     if (hash::has.key(call_key, G_CACHE)) {
 #       age_sec <- (curr_time -  G_CACHE[[call_key]][['call_time']])  |>  as.numeric(units = 'secs')
 #       if (age_sec < FORCE_REFRESH_AFTER_SEC) {
 #         

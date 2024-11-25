@@ -23,6 +23,10 @@ get_url_possibly <-
   }
 
 
+# get_url_possibly_not_cached('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
+# get_url_with_retry('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
+# get_url_with_retry_TO_CACHE('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
+
 
 #' get_url_base
 #'

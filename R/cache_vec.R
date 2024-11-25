@@ -130,7 +130,7 @@ cache_vec_save <- function(
 #' @export
 #'
 #' @examples
-#'    get__hard_caches(roster)
+#'    get_hard_caches(roster)
 #' 
 get_hard_caches <- function(
     func,
@@ -234,7 +234,7 @@ cache_make_blank <- function(
   )
 }
 
-#' expand_vector_lst, expand_vector_dor
+#' expand_vector_lst, expand_vector_dots
 #'
 #' @param args_vec 
 #' @param ...  
@@ -274,14 +274,14 @@ expand_vector_dots <- function( ... , is_valid_combo   , stringsAsFactors = FALS
 #' @export
 #'
 #' @examples
-cache_vect_maker<- function(
+cache_vect_maker <- function(
     func, 
     x_vec_nms = c(), 
     all_possible = list(),
     all_expansion_val = 'all',
     is_valid_combo  = \(...){TRUE},
     binding_func = purrr::list_rbind,
-    force_refresh_after_sec_default =  60 * 60 * 24 * 30,
+    force_refresh_after_sec_default =  60 * 60 * 24 * 90,
     force_hard_cache_save_after_sec_default = 100,
     cache_key_col = '__args_key',
     cache_time_col   = '__cached_on'
@@ -304,7 +304,7 @@ cache_vect_maker<- function(
     }else{
       cache_make_blank(cache_key_col, cache_time_col)
     }
-  cache_record  <-  cache_vect_generate_record(cache_df, cache_key_col, cache_time_col)
+  cache_record <- cache_vect_generate_record(cache_df, cache_key_col, cache_time_col)
   
     
   
@@ -320,6 +320,9 @@ cache_vect_maker<- function(
   if (  ! all(x_vec_nms |> purrr::map(~{.x %in% names(all_possible)}) |> unlist())){
     glue_stop('When creating cached vectorized version all of x_vec_nms, must have matching names in all_possible')
   }  
+  
+  
+  
   
   ##################
   # Create the wrapper function
@@ -436,7 +439,8 @@ cache_vect_maker<- function(
             purrr::set_names(
               paste0('__',  names(args_vec))
             )
-        
+        #print('args_vec_dunder')
+        #print(args_vec_dunder)
         result <- bind_cols(result, args_vec_dunder)
         
         
@@ -462,7 +466,7 @@ cache_vect_maker<- function(
         
         
         if (calc_time_since_save  > force_hard_cache_save_after_sec){
-          write_feather(
+          cache_vec_save(
               func = NULL, 
               cache_df = cache_df, 
               hard_cache_file_name= hard_cache_file_name,

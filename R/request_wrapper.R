@@ -94,4 +94,4 @@ get_url_with_retry <- make_cached_function(get_url_with_retry_TO_CACHE)
 
 
 
-
+get_url_with_retry('https://api-web.nhle.com/v1/player/8478402/game-log/20152016/2')
